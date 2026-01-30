@@ -1,0 +1,118 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  password      String?
+  role          String    @default("STUDENT") // STUDENT, TEACHER
+  image         String?
+  classes       ClassMember[]
+  createdClasses Class[]  @relation("TeacherClasses")
+  prs           PullRequest[]
+  issues        Issue[]
+  comments      Comment[]
+}
+
+model Class {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  teacherId   String
+  teacher     User      @relation("TeacherClasses", fields: [teacherId], references: [id])
+  members     ClassMember[]
+  assignments Assignment[]
+  files       File[]    @relation("ClassFiles")
+}
+
+model ClassMember {
+  id      String @id @default(cuid())
+  userId  String
+  classId String
+  user    User   @relation(fields: [userId], references: [id])
+  class   Class  @relation(fields: [classId], references: [id])
+
+  @@unique([userId, classId])
+}
+
+model Assignment {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  deadline    DateTime?
+  classId     String
+  class       Class     @relation(fields: [classId], references: [id])
+  prs         PullRequest[]
+  issues      Issue[]
+  files       File[]
+}
+
+model File {
+  id           String      @id @default(cuid())
+  path         String      // e.g., "Assignment1/student_a/index.md"
+  content      String
+  classId      String
+  class        Class       @relation("ClassFiles", fields: [classId], references: [id])
+  assignmentId String?
+  assignment   Assignment? @relation(fields: [assignmentId], references: [id])
+  userId       String?     // Owner of the file if in student folder
+  isMainBranch Boolean     @default(true)
+
+  // For PRs, we store proposed changes as temporary files or link them to PR
+  prId         String?
+  pullRequest  PullRequest? @relation(fields: [prId], references: [id])
+}
+
+model PullRequest {
+  id           String      @id @default(cuid())
+  title        String
+  description  String?
+  status       String      @default("OPEN") // OPEN, MERGED, CLOSED
+  studentId    String
+  student      User        @relation(fields: [studentId], references: [id])
+  assignmentId String
+  assignment   Assignment  @relation(fields: [assignmentId], references: [id])
+  grade        Float?
+  teacherComment String?
+  proposedFiles File[]
+  comments     Comment[]
+  createdAt    DateTime    @default(now())
+}
+
+model Issue {
+  id           String      @id @default(cuid())
+  title        String
+  description  String
+  status       String      @default("OPEN") // OPEN, CLOSED
+  studentId    String
+  student      User        @relation(fields: [studentId], references: [id])
+  assignmentId String
+  assignment   Assignment  @relation(fields: [assignmentId], references: [id])
+  comments     Comment[]
+  createdAt    DateTime    @default(now())
+}
+
+model Comment {
+  id            String       @id @default(cuid())
+  content       String
+  userId        String
+  user          User         @relation(fields: [userId], references: [id])
+  prId          String?
+  pullRequest   PullRequest? @relation(fields: [prId], references: [id])
+  issueId       String?
+  issue         Issue?       @relation(fields: [issueId], references: [id])
+  createdAt     DateTime     @default(now())
+
+  // Line number for code/text review
+  line          Int?
+}
