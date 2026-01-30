@@ -9,7 +9,8 @@ export async function POST(req, { params }) {
 
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { title, description, path, content } = await req.json();
+  let { title, description, path, content } = await req.json();
+  path = decodeURIComponent(path);
 
   // Authorization Check for students: can only edit files in their own folder
   if (session.user.role === 'STUDENT') {

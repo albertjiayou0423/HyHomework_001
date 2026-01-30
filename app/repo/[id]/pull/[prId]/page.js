@@ -13,6 +13,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { GitPullRequest, MessageSquare, CheckCircle, XCircle } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 
 export default function PRDetailsPage() {
   const { id, prId } = useParams();
@@ -24,6 +25,14 @@ export default function PRDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [grade, setGrade] = useState("");
   const [comment, setComment] = useState("");
+  const [comments, setComments] = useState([]);
+  const [newComment, setNewComment] = useState("");
+
+  async function fetchComments() {
+    const res = await fetch(`/api/repo/${id}/comments?prId=${prId}`);
+    const data = await res.json();
+    setComments(data);
+  }
 
   useEffect(() => {
     async function fetchData() {
@@ -39,6 +48,7 @@ export default function PRDetailsPage() {
       const oldData = await oldRes.json();
       setOldFile(oldData);
 
+      await fetchComments();
       setLoading(false);
     }
     fetchData();
@@ -55,6 +65,19 @@ export default function PRDetailsPage() {
     const prRes = await fetch(`/api/repo/${id}/pulls/${prId}`);
     const prData = await prRes.json();
     setPr(prData);
+  };
+
+  const handlePostComment = async () => {
+    if (!newComment.trim()) return;
+    const res = await fetch(`/api/repo/${id}/comments`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: newComment, prId }),
+    });
+    if (res.ok) {
+      setNewComment("");
+      fetchComments();
+    }
   };
 
   if (loading) return <div>Loading...</div>;
@@ -86,15 +109,45 @@ export default function PRDetailsPage() {
                   <AvatarFallback>{pr.student.name?.[0]}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
-                  <span className="font-semibold">{pr.student.name}</span> commented 2 days ago
+                  <span className="font-semibold">{pr.student.name}</span> commented
                 </div>
               </CardHeader>
               <CardContent className="py-4">
-                <p>{pr.description || "No description provided."}</p>
+                <MarkdownRenderer content={pr.description || "No description provided."} />
               </CardContent>
             </Card>
 
-            <h3 className="text-sm font-semibold text-[#7d8590] uppercase tracking-wider">Changes</h3>
+            {comments.map((c) => (
+              <Card key={c.id} className="bg-[#161b22] border-[#30363d] text-white">
+                <CardHeader className="flex flex-row items-center gap-4 py-2 border-b border-[#30363d] bg-[#161b22]">
+                  <Avatar className="w-6 h-6">
+                    <AvatarFallback>{c.user.name?.[0]}</AvatarFallback>
+                  </Avatar>
+                  <div className="text-sm">
+                    <span className="font-semibold">{c.user.name}</span> commented
+                  </div>
+                </CardHeader>
+                <CardContent className="py-3">
+                  <MarkdownRenderer content={c.content} />
+                </CardContent>
+              </Card>
+            ))}
+
+            <div className="pt-4 space-y-4">
+              <Textarea
+                placeholder="Leave a comment"
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                className="bg-[#0d1117] border-[#30363d] min-h-[120px]"
+              />
+              <div className="flex justify-end">
+                <Button onClick={handlePostComment} className="bg-[#238636] hover:bg-[#2ea043] text-white">
+                  Comment
+                </Button>
+              </div>
+            </div>
+
+            <h3 className="text-sm font-semibold text-[#7d8590] uppercase tracking-wider pt-8">Changes</h3>
             <DiffView oldContent={oldFile?.content || ""} newContent={newFile?.content || ""} />
           </div>
 

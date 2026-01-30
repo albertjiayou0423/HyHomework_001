@@ -8,20 +8,46 @@ import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CircleDot, MessageSquare } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 
 export default function IssueDetailsPage() {
   const { id, issueId } = useParams();
   const [issue, setIssue] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [comments, setComments] = useState([]);
+  const [newComment, setNewComment] = useState("");
+
+  async function fetchComments() {
+    const res = await fetch(`/api/repo/${id}/comments?issueId=${issueId}`);
+    const data = await res.json();
+    setComments(data);
+  }
 
   useEffect(() => {
-    fetch(`/api/repo/${id}/issues/${issueId}`)
-      .then(res => res.json())
-      .then(data => {
-        setIssue(data);
-        setLoading(false);
-      });
+    async function fetchData() {
+      const res = await fetch(`/api/repo/${id}/issues/${issueId}`);
+      const data = await res.json();
+      setIssue(data);
+      await fetchComments();
+      setLoading(false);
+    }
+    fetchData();
   }, [id, issueId]);
+
+  const handlePostComment = async () => {
+    if (!newComment.trim()) return;
+    const res = await fetch(`/api/repo/${id}/comments`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: newComment, issueId }),
+    });
+    if (res.ok) {
+      setNewComment("");
+      fetchComments();
+    }
+  };
 
   if (loading) return <div>Loading...</div>;
 
@@ -52,12 +78,38 @@ export default function IssueDetailsPage() {
               </div>
             </CardHeader>
             <CardContent className="py-4">
-              <p>{issue.description}</p>
+              <MarkdownRenderer content={issue.description} />
             </CardContent>
           </Card>
 
-          <div className="border-l-2 border-[#30363d] ml-8 pl-8 py-2 text-[#7d8590] text-sm italic">
-            Discussion system coming soon...
+          {comments.map((c) => (
+            <Card key={c.id} className="bg-[#161b22] border-[#30363d] text-white">
+              <CardHeader className="flex flex-row items-center gap-4 py-2 border-b border-[#30363d] bg-[#161b22]">
+                <Avatar className="w-6 h-6">
+                  <AvatarFallback>{c.user.name?.[0]}</AvatarFallback>
+                </Avatar>
+                <div className="text-sm">
+                  <span className="font-semibold">{c.user.name}</span> commented
+                </div>
+              </CardHeader>
+              <CardContent className="py-3">
+                <MarkdownRenderer content={c.content} />
+              </CardContent>
+            </Card>
+          ))}
+
+          <div className="pt-4 space-y-4">
+            <Textarea
+              placeholder="Leave a comment"
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              className="bg-[#0d1117] border-[#30363d] min-h-[120px]"
+            />
+            <div className="flex justify-end">
+              <Button onClick={handlePostComment} className="bg-[#238636] hover:bg-[#2ea043] text-white">
+                Comment
+              </Button>
+            </div>
           </div>
         </div>
       </div>

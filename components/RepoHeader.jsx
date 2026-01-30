@@ -6,15 +6,15 @@ import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-export function RepoHeader({ repoName, ownerName, isPublic = true }) {
+export function RepoHeader({ repoId, repoName, ownerName, isPublic = true }) {
   const pathname = usePathname();
 
   const tabs = [
-    { label: "Code", icon: Code, href: `/repo/${repoName}` },
-    { label: "Issues", icon: CircleDot, href: `/repo/${repoName}/issues`, count: 0 },
-    { label: "Pull requests", icon: GitPullRequest, href: `/repo/${repoName}/pulls`, count: 0 },
-    { label: "Actions", icon: Layout, href: `/repo/${repoName}/actions` },
-    { label: "Settings", icon: Settings, href: `/repo/${repoName}/settings` },
+    { label: "Code", icon: Code, href: `/repo/${repoId}` },
+    { label: "Issues", icon: CircleDot, href: `/repo/${repoId}/issues`, count: 0 },
+    { label: "Pull requests", icon: GitPullRequest, href: `/repo/${repoId}/pulls`, count: 0 },
+    { label: "Actions", icon: Layout, href: `/repo/${repoId}/actions` },
+    { label: "Settings", icon: Settings, href: `/repo/${repoId}/settings` },
   ];
 
   return (
@@ -24,7 +24,7 @@ export function RepoHeader({ repoName, ownerName, isPublic = true }) {
           <Book className="w-5 h-5 text-[#7d8590]" />
           <Link href={`/${ownerName}`} className="text-[#58a6ff] hover:underline">{ownerName}</Link>
           <span className="text-[#7d8590]">/</span>
-          <Link href={`/repo/${repoName}`} className="font-semibold text-[#58a6ff] hover:underline">{repoName}</Link>
+          <Link href={`/repo/${repoId}`} className="font-semibold text-[#58a6ff] hover:underline">{repoName}</Link>
           <Badge variant="outline" className="text-[#7d8590] border-[#30363d] rounded-full text-xs ml-2 uppercase">
             {isPublic ? "Public" : "Private"}
           </Badge>

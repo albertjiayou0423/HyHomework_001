@@ -30,7 +30,7 @@ export default async function IssueListPage({ params }) {
 
   return (
     <AppLayout>
-      <RepoHeader repoName={repo.name} ownerName={repo.teacher.name} />
+      <RepoHeader repoId={id} repoName={repo.name} ownerName={repo.teacher.name} />
 
       <div className="max-w-6xl mx-auto px-4 md:px-8 py-6">
         <div className="flex justify-end mb-4">

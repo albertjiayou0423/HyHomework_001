@@ -12,7 +12,8 @@ import { canStudentSeeFile } from "@/lib/auth-utils";
 
 export default async function BlobPage({ params }) {
   const { id, path } = await params;
-  const filePath = path.join('/');
+  const filePath = path.map(decodeURIComponent).join('/');
+  console.log("DEBUG: filePath =", filePath);
   const session = await getServerSession(authOptions);
 
   if (!session) redirect("/login");
